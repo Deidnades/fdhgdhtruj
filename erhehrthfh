@@ -1,0 +1,65 @@
+import telegram
+import json
+import requests
+
+from telegram.ext import Updater
+
+# Define the Telegram bot token
+bot_token = '6042894885:AAHoAnzce5ZVoOswRkabvJFYxkf18Tq5zN8'
+
+# Define the Lolzteam API key
+lolzteam_api_key = '8bca204d87c8411a3111539aee485329bc1f6173'
+
+# Define the Lolzteam market API URL
+lolzteam_market_api_url = 'https://lolz.guru/market/api/v1/'
+
+# Define the Telegram bot commands
+commands = [
+    ('upload_to_market', 'Upload to market'),
+    ('help', 'Help')
+]
+
+# Define the Telegram bot message handlers
+def start(update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id, text='Welcome to the TikTok account uploader bot!')
+
+def upload_to_market(update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id, text='Please enter the title of the product:')
+    title = update.message.text
+    context.bot.send_message(chat_id=update.effective_chat.id, text='Please enter the price of the product (in rubles):')
+    price = update.message.text
+    context.bot.send_message(chat_id=update.effective_chat.id, text='Please select the origin of the product:', reply_markup=telegram.ReplyKeyboardMarkup([['brute', 'phishing'], ['stealer', 'personal'], ['resale', 'autorag']]))
+    origin = update.message.text
+    context.bot.send_message(chat_id=update.effective_chat.id, text='Please upload the TikTok cookie file in txt format:')
+    cookie_file = update.message.document.file_id
+    cookie_file_url = context.bot.get_file(cookie_file).file_path
+    cookie_file_content = requests.get(cookie_file_url).content
+    cookie_file_json = json.loads(cookie_file_content)
+    headers = {'Authorization': 'Bearer ' + lolzteam_api_key}
+    data = {'title': title, 'price': price, 'origin': origin, 'cookie': cookie_file_json}
+    response = requests.post(lolzteam_market_api_url + 'add', headers=headers, data=data)
+    if response.status_code == 200:
+        context.bot.send_message(chat_id=update.effective_chat.id, text='The product was successfully uploaded to the market!')
+    else:
+        context.bot.send_message(chat_id=update.effective_chat.id, text='There was an error uploading the product to the market. Please try again later.')
+
+def help(update, context):
+    help_text = 'This bot allows you to automatically add TikTok accounts to the Lolzteam market. To use the bot, simply click the "Upload to market" button and follow the prompts. If you need further assistance, please contact the bot creator.'
+    context.bot.send_message(chat_id=update.effective_chat.id, text=help_text)
+
+# Define the main function
+def main():
+    # Create the Telegram bot updater and dispatcher
+    updater = telegram.Updater(token=bot_token, use_context=True)
+    dispatcher = updater.dispatcher
+
+    # Register the Telegram bot message handlers
+    dispatcher.add_handler(telegram.CommandHandler('start', start))
+    dispatcher.add_handler(telegram.CommandHandler('help', help))
+    dispatcher.add_handler(telegram.CommandHandler('upload_to_market', upload_to_market))
+
+    # Start the Telegram bot
+    updater.start_polling()
+
+if __name__ == '__main__':
+    main()
